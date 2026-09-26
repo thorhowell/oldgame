@@ -1,53 +1,139 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Socket.IO chat</title>
-    <style>
-      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+<link rel="stylesheet" href="style.css">
 
-      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
-      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
-      #input:focus { outline: none; }
-      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+<body>
+    <div id="header_warp" class="outer">
+    <header class="inner">
+        <h1 id="project_title">Dyslexi</h1>
+    </header>
+    </div>
+    <div id="main_content_wrap" class="outer">
+        <section id="main_content" class="inner">
+            <h1>Definition</h1>
+            <blockquote>
+                <p>Dyslexi eller specifika läs- och skrivsvårigheter är en varaktig funktionsnedsättning som innebär svårigheter med att läsa och/eller skriva.
+                    Funktionsnedsättningen beror på en störning i vissa språkliga funktioner som hindrar automatisering av ordavkodningen. </p>
+            </blockquote>
+            <blockquote>
+                <p>
+                    Dyslexi är inte relaterat till intelligensnivå. Dyslexi är inte ett läshinder som orsakas av synproblem eller brist i undervisning, sociala förhållanden eller motivation.
+                    Dyslexi kan vara en medfödd egenskap, utvecklingsdyslexi, eller ha uppkommit vid skada eller sjukdom.
+                </p>
+            </blockquote>
+            <blockquote>
+                <p>En vanlig uppskattning är att fem till tio procent av befolkningen har så stora svårigheter att läsa och skriva att de kan få en dyslexidiagnos. Fler män än kvinnor har specifika läs- och skrivsvårigheter. Att det finns skillnader mellan män och kvinnor tros bero på skillnader i kognitiva förmågor så som bearbetningshastighet, fonologisk förmåga och exekutiva funktioner. Dessa förmågor påverkar ordavkodningen</p>
+            </blockquote>
+        </section>
+    </div>
+</body>
+Kod från: (https://github.com/geon/geon.github.com/blob/master/_posts/2016-03-03-dsxyliea.md)
 
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages > li { padding: 0.5rem 1rem; }
-      #messages > li:nth-child(odd) { background: #efefef; }
-    </style>
-  </head>
-  <body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-      
-    </form>
-    <button id="giveData">Give</button>
-    <button id="sendData">Send</button>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script type="text/javascript">
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
+"use strict";
 
-  const form = document.getElementById('form');
-  const input = document.getElementById('input');
-  const messages = document.getElementById('messages');
+$(function(){
 
-  form.addEventListener('submit', (e) => {
-    console.log("aaa")
-    e.preventDefault();
-    if (input.value) {
-      socket.emit('chat message', input.value);
-      input.value = '';
-    }
-  });
+	var getTextNodesIn = function(el) {
+	    return $(el).find(":not(iframe,script)").addBack().contents().filter(function() {
+	        return this.nodeType == 3;
+	    });
+	};
 
-  socket.on('chat message', (msg) => {
-    const item = document.createElement('li');
-    item.textContent = msg;
-    messages.appendChild(item);
-    window.scrollTo(0, document.body.scrollHeight);
-  });
+	// var textNodes = getTextNodesIn($("p, h1, h2, h3"));
+	var textNodes = getTextNodesIn($("*"));
+
+
+
+	function isLetter(char) {
+		return /^[\d]$/.test(char);
+	}
+
+
+	var wordsInTextNodes = [];
+	for (var i = 0; i < textNodes.length; i++) {
+		var node = textNodes[i];
+
+		var words = []
+
+		var re = /\w+/g;
+		var match;
+		while ((match = re.exec(node.nodeValue)) != null) {
+
+			var word = match[0];
+			var position = match.index;
+
+			words.push({
+				length: word.length,
+				position: position
+			});
+		}
+
+		wordsInTextNodes[i] = words;
+	};
+
+
+	function messUpWords () {
+
+		for (var i = 0; i < textNodes.length; i++) {
+
+			var node = textNodes[i];
+
+			for (var j = 0; j < wordsInTextNodes[i].length; j++) {
+
+				// Only change a tenth of the words each round.
+				if (Math.random() > 1/10) {
+
+					continue;
+				}
+
+				var wordMeta = wordsInTextNodes[i][j];
+
+				var word = node.nodeValue.slice(wordMeta.position, wordMeta.position + wordMeta.length);
+				var before = node.nodeValue.slice(0, wordMeta.position);
+				var after  = node.nodeValue.slice(wordMeta.position + wordMeta.length);
+
+				node.nodeValue = before + messUpWord(word) + after;
+			};
+		};
+	}
+
+	function messUpWord (word) {
+
+		if (word.length < 3) {
+
+			return word;
+		}
+
+		return word[0] + messUpMessyPart(word.slice(1, -1)) + word[word.length - 1];
+	}
+
+	function messUpMessyPart (messyPart) {
+
+		if (messyPart.length < 3) {
+
+			return messyPart;
+		}
+
+		var a, b;
+		while (!(a < b)) {
+
+			a = getRandomInt(0, messyPart.length - 1);
+			b = getRandomInt(0, messyPart.length - 1);
+		}
+
+		return messyPart.slice(0, a) + messyPart[b] + messyPart.slice(a+1, b) + messyPart[a] + messyPart.slice(b+1);
+	}
+
+	// From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+	function getRandomInt(min, max) {
+		
+		return Math.floor(Math.random() * (max - min + 1) + min);
+	}
+
+
+	setInterval(messUpWords, 50);
+});
+
+
 </script>
-  </body>
-</html>
